@@ -75,14 +75,7 @@ class ClickupReportService
 
     private function groupEntriesByProject(string $section): array
     {
-        $categories = [
-            'Panda' => [],
-            'Reconcile' => [],
-            'PPOB' => [],
-            'Ticketing' => [],
-            'Others' => []
-        ];
-
+        $categories = [];
         $lines = explode("\n", $section);
         $activeCategory = 'Others';
 
@@ -102,11 +95,6 @@ class ClickupReportService
                 $activeCategory = $detected;
             }
 
-            // Explicitly handle [project] tag to map to Others
-            if (preg_match('/\\\\?\[project\\\\?\]/i', $line)) {
-                $activeCategory = 'Others';
-            }
-
             $cleaned = $this->cleanEntry($line);
             
             // If the line was just a tag (like "[panda]"), skip it now that category is set
@@ -117,28 +105,29 @@ class ClickupReportService
             // Avoid adding just generic project tags or metadata
             if (strtolower($cleaned) === 'project') continue;
 
+            if (!isset($categories[$activeCategory])) {
+                $categories[$activeCategory] = [];
+            }
+
             if (!in_array($cleaned, $categories[$activeCategory])) {
                 $categories[$activeCategory][] = $cleaned;
             }
         }
 
-        return array_filter($categories);
+        return $categories;
     }
 
     private function detectCategory(string $line): ?string
     {
-        $lower = strtolower($line);
-        if (preg_match('/\\\\?\[panda/i', $line) || str_contains($lower, 'bot-dana')) {
-            return 'Panda';
-        }
-        if (preg_match('/\\\\?\[recon/i', $line) || str_contains($lower, 'reconcile')) {
-            return 'Reconcile';
-        }
-        if (preg_match('/\\\\?\[ppob/i', $line)) {
-            return 'PPOB';
-        }
-        if (preg_match('/\\\\?\[ticketing/i', $line)) {
-            return 'Ticketing';
+        if (preg_match('/\\\\?\[(.*?)\\\\?\]/', $line, $matches)) {
+            $tag = trim($matches[1]);
+            
+            // Map "project" or "others" to "Others"
+            if (in_array(strtolower($tag), ['project', 'others'])) {
+                return 'Others';
+            }
+            
+            return ucfirst($tag);
         }
         return null;
     }

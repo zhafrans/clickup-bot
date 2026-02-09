@@ -15,12 +15,6 @@ class ClickupController extends Controller
         $this->reportService = $reportService;
     }
 
-    /**
-     * Fetch the daily report from ClickUp and send it to Telegram group.
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function sendReport(Request $request)
     {
         try {
